@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0a6a86"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="운영장부"><meta name="apple-mobile-web-app-status-bar-style" content="default"><title>청소 운영장부</title><style>:root{color-scheme:light}html{scroll-padding-top:0}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><script src="firebase-config.js"></script></head><body>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0a6a86"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="클린노트"><meta name="apple-mobile-web-app-status-bar-style" content="default"><title>클린노트</title><style>:root{color-scheme:light}html{scroll-padding-top:0}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><script src="firebase-config.js"></script></head><body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -86,6 +86,20 @@ a.btn{text-decoration:none}
 .up.late .up-main small{color:var(--out)}
 .up .nums{font:700 15px var(--font-num);font-variant-numeric:tabular-nums;white-space:nowrap}
 .up .btn{flex:none}
+.cal{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.cal-h,.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal-h span{padding:8px 0;text-align:center;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line)}
+.cal-h .sun,.cal-d.sun b{color:var(--out)}.cal-h .sat,.cal-d.sat b{color:var(--accent)}
+.cal-x{min-height:54px;border-top:1px solid var(--line);background:var(--surface-2)}
+.cal-d{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:54px;padding:6px 2px 4px;border:0;border-top:1px solid var(--line);border-left:1px solid var(--line);background:none;color:var(--fg);cursor:pointer;min-width:0}
+.cal-g>*:nth-child(7n+1){border-left:0}
+.cal-d b{font:600 14px var(--font-body)}
+.cal-d.today b{display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:12px;background:var(--accent);color:var(--accent-ink)}
+.cal-d.sel{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.cal-n{font-style:normal;font-weight:700;font-size:12px;min-width:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:var(--accent-ink);text-align:center;line-height:20px}
+.cal-n.unp{background:var(--out);color:#fff}
+.cal-ev{display:none;max-width:100%;font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (min-width:720px){.cal-d{min-height:96px;align-items:flex-start;padding:6px 8px}.cal-ev{display:block}.cal-n{position:absolute;top:6px;right:6px}}
 .sech{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:20px 2px 8px}
 .sech h2{font:700 16px/1.4 var(--font-body)}
 .sech small{color:var(--muted);font-weight:400;font-size:12.5px;margin-left:6px}
@@ -300,7 +314,7 @@ details.more>.inner{display:flex;flex-direction:column;gap:12px;padding-bottom:6
   </div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
-<div class="login" id="login"><div class="login-card"><div class="login-mark">✓</div><h1>청소 운영장부</h1><p class="login-msg" id="loginMsg">불러오는 중…</p>
+<div class="login" id="login"><div class="login-card"><div class="login-mark">✓</div><h1>클린노트</h1><p class="login-msg" id="loginMsg">불러오는 중…</p>
 <form id="loginForm" hidden><label class="fld"><span>이메일</span><input type="email" name="email" autocomplete="username" inputmode="email" autocapitalize="off" autocorrect="off" required></label><label class="fld"><span>비밀번호</span><input type="password" name="password" autocomplete="current-password" required></label><p class="err-text" id="loginErr" hidden></p><button type="submit" class="btn primary" id="loginBtn">로그인</button><button type="button" class="linkbtn" id="loginReset">비밀번호를 잊었어요</button></form></div></div>
 
 <script>
@@ -308,6 +322,7 @@ details.more>.inner{display:flex;flex-direction:column;gap:12px;padding-bottom:6
 'use strict';
 
 /*LOGIC_START*/
+const APP_NAME='클린노트';
 const GROUPS=['고정경비','여비비','이동경비','식대'];
 const GROUPKEY={'고정경비':'fixed','여비비':'misc','이동경비':'travel','식대':'meal'};
 const PAYS=['현금','카드','계좌이체'];
@@ -541,7 +556,7 @@ function axisLabel(v){
 const T0=new Date();
 const S={view:'home',rtab:'sum',month:ymOf(T0),year:T0.getFullYear(),taxYear:T0.getFullYear(),taxPeriod:'all',
   jobs:[],expenses:[],settings:mergeSettings({}),names:{},me:{id:'local',name:''},userNS:null,dl:null,
-  readOnly:false,mode:'loading',err:'',loaded:{jobs:false,exp:false},jf:'전체',ef:'전체',rs:'rev',sheet:null};
+  readOnly:false,mode:'loading',err:'',loaded:{jobs:false,exp:false},jf:'전체',ef:'전체',rs:'rev',sheet:null,calDay:'',jview:(()=>{try{return localStorage.getItem('cleanops.jview')==='cal'?'cal':'list';}catch(e){return 'list';}})()};
 const $=(s,r)=>(r||document).querySelector(s);
 const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -571,7 +586,7 @@ const Store={mode:'cloud',cb:{},unsubs:[],fromYear:0,gotJ:false,gotE:false,sj:nu
     this.sub();
     this.unsubs.push(F.onSnapshot(F.doc(fdb,'settings','main'),s=>cb.settings(s.exists()?s.data():{}),fail));
     this.unsubs.push(F.onSnapshot(F.collection(fdb,'members'),s=>{
-      let ch=false;s.docs.forEach(d=>{const n=(d.data().name||'').trim();if(n&&S.names[d.id]!==n){S.names[d.id]=n;ch=true;}if(d.id===S.me.id&&n&&S.me.name!==n){S.me.name=n;ch=true;}});
+      let ch=false;s.docs.forEach(d=>{const dv=d.data(),n=String(dv.name||String(dv.email||'').split('@')[0]||'').trim();if(n&&S.names[d.id]!==n){S.names[d.id]=n;ch=true;}if(d.id===S.me.id&&n&&S.me.name!==n){S.me.name=n;ch=true;}});
       if(ch)renderSoft();},fail));
     this.unsubs.push(F.onSnapshot(F.doc(fdb,'meta','backup'),s=>{S.backupMeta=s.exists()?s.data():null;renderBanner();if(S.view==='report')renderSoft();},fail));
     ['jobs','expenses'].forEach(col=>this.unsubs.push(F.onSnapshot(F.query(F.collection(fdb,col),F.where('deleted','==',true)),s=>{
@@ -616,6 +631,7 @@ const Team={
   },
   hide(){$('#login').hidden=true;},
   async start(){
+    try{const bn=localStorage.getItem('cleanops.team.brand')||APP_NAME;const h=$('#login h1');if(h)h.textContent=bn;document.title=bn;}catch(e){}
     window.addEventListener('online',renderBanner);window.addEventListener('offline',renderBanner);
     try{if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
     const cfg=window.FIREBASE_CONFIG;
@@ -640,7 +656,7 @@ const Team={
         Store.start({
           jobs:list=>{S.jobs=list;S.loaded.jobs=true;renderSoft();},
           expenses:list=>{S.expenses=list;S.loaded.exp=true;renderSoft();},
-          settings:raw=>{S.settings=mergeSettings(raw);renderSoft();}
+          settings:raw=>{S.settings=mergeSettings(raw);try{localStorage.setItem('cleanops.team.brand',S.settings.business.name||'');}catch(e){}renderSoft();}
         });
         FBM.F.setDoc(FBM.F.doc(fdb,'members',u.uid),{email:u.email||'',lastSeen:new Date().toISOString()},{merge:true}).catch(()=>{});
         render();
@@ -688,7 +704,7 @@ function saveBlob(name,text,type){
   a.href=url;a.download=name;a.rel='noopener';document.body.appendChild(a);a.click();
   setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},4000);
 }
-const bizName=()=>((S.settings&&S.settings.business&&S.settings.business.name)||'청소운영장부');
+const bizName=()=>((S.settings&&S.settings.business&&S.settings.business.name)||APP_NAME);
 async function fetchAll(){
   const F=FBM.F;
   const g=await Promise.all([F.getDocsFromServer(F.collection(fdb,'jobs')),F.getDocsFromServer(F.collection(fdb,'expenses')),F.getDocFromServer(F.doc(fdb,'settings','main'))]);
@@ -717,7 +733,7 @@ async function doBackupShare(){
     let o=S.pendingBak&&Date.now()-S.pendingBak.t<300000?S.pendingBak.o:null;
     if(!o){toast('백업 파일을 만드는 중이에요…');o=await makeBackup();S.pendingBak={o,t:Date.now()};}
     const f=new File([JSON.stringify(o)],bizName()+'_전체백업_'+ymd(new Date())+'.json',{type:'application/json'});
-    try{await navigator.share({files:[f],title:'청소 운영장부 백업'});}
+    try{await navigator.share({files:[f],title:APP_NAME+' 백업'});}
     catch(e){if(e&&e.name==='NotAllowedError'){toast('파일을 준비했어요. 같은 버튼을 한 번 더 눌러 주세요.');return;}if(e&&e.name==='AbortError')return;throw e;}
     S.pendingBak=null;await markBackup(o);
   }catch(e){toast('공유하지 못했어요. ‘백업 파일 저장’을 써 주세요.');}
@@ -736,7 +752,7 @@ async function writeMany(col,obj){
   return ids.length;
 }
 async function applyRestore(o){
-  if(!o||o.app!=='cleanops'||typeof o.jobs!=='object'||typeof o.expenses!=='object'||!o.jobs||!o.expenses){toast('청소 운영장부 백업 파일이 아니에요.');return;}
+  if(!o||o.app!=='cleanops'||typeof o.jobs!=='object'||typeof o.expenses!=='object'||!o.jobs||!o.expenses){toast('이 앱의 백업 파일이 아니에요.');return;}
   const c=cnt(o);
   if(!window.confirm('백업 내용(일정 '+c[0]+'건, 지출 '+c[1]+'건)을 서버에 복원할까요?\n\n· 같은 항목은 백업 내용으로 덮어쓰고, 없는 항목은 추가해요.\n· 지금 있는 다른 기록은 지워지지 않아요.\n· 공유 중인 다른 사람 화면에도 바로 반영돼요.'+(o.settings&&Object.keys(o.settings).length?'\n· 업체 정보·설정도 백업 값으로 바뀌어요.':'')))return;
   toast('복원 전에 현재 상태를 먼저 백업해요…');
@@ -877,8 +893,8 @@ const ICON={
 const NAV=[['home','홈'],['jobs','일정'],['expenses','지출'],['report','정산'],['settings','설정']];
 const ico=k=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+ICON[k]+'</svg>';
 function brandHTML(){
-  const b=S.settings.business,logo=safeImg(b.logo),name=b.name||'내 청소업체';
-  return '<div class="brand"><div class="brand-mark">'+(logo?'<img src="'+esc(logo)+'" alt="">':esc(name.slice(0,1)))+'</div><div><div class="brand-name">'+esc(name)+'</div><div class="brand-sub">운영장부</div></div></div>';
+  const b=S.settings.business,logo=safeImg(b.logo),name=b.name||APP_NAME;
+  return '<div class="brand"><div class="brand-mark">'+(logo?'<img src="'+esc(logo)+'" alt="">':esc(name.slice(0,1)))+'</div><div><div class="brand-name">'+esc(name)+'</div><div class="brand-sub">'+esc(b.name?APP_NAME:'일정·정산')+'</div></div></div>';
 }
 function renderNav(){
   const btn=(c,k,l)=>'<button type="button" class="'+c+'" data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ico(k)+'<span>'+l+'</span></button>';
@@ -944,7 +960,7 @@ function viewHome(){
   const upcoming=act.filter(j=>{const s=statusOf(j,now);return (j.schedule||'').slice(0,10)>todayStr&&(s==='대기'||s==='진행중');}).slice(0,8);
   const unpaid=S.jobs.filter(j=>j.payStatus!=='완료'&&statusOf(j,now)!=='취소').sort(bySchedule);
   const sample=S.jobs.some(j=>j.isSample)||S.expenses.some(e=>e.isSample);
-  let h='<div class="pagehead"><div><p class="sub">'+esc(S.settings.business.name||'청소 운영장부')+'</p><h1>'+(now.getMonth()+1)+'월 '+now.getDate()+'일 '+DOW[now.getDay()]+'요일</h1></div>'+deskBtn('newJob','일정 등록')+'</div>';
+  let h='<div class="pagehead"><div><p class="sub">'+esc(S.settings.business.name||APP_NAME)+'</p><h1>'+(now.getMonth()+1)+'월 '+now.getDate()+'일 '+DOW[now.getDay()]+'요일</h1></div>'+deskBtn('newJob','일정 등록')+'</div>';
   if(sample&&!S.readOnly)h+='<div class="banner">예시 데이터가 들어 있어요. 실제 업무를 시작하기 전에 지워 주세요. <button type="button" class="btn" data-act="clearSample">예시 데이터 지우기</button></div>';
   if(tomorrow.length)h+='<div class="banner note-in"><span>내일 일정 <b>'+tomorrow.length+'건</b> · 첫 일정 '+fmtTime(tomorrow[0].schedule)+' '+esc(titleOf(tomorrow[0]))+'</span><button type="button" class="btn" data-act="copyTomorrow">안내 문구 복사</button></div>';
   h+='<div class="sech"><h2>오늘 일정<small>'+today.length+'건</small></h2></div>';
@@ -963,6 +979,30 @@ function viewHome(){
   h+='<div class="actions" style="margin-top:16px"><button type="button" class="btn" data-go="expenses">지출 보기</button><button type="button" class="btn" data-go="tax">세무자료 받기</button></div>';
   return h;
 }
+function calHTML(all,now,todayStr){
+  const p=S.month.split('-').map(Number),y=p[0],mo=p[1],lead=new Date(y,mo-1,1).getDay(),dim=new Date(y,mo,0).getDate();
+  const by={};
+  all.forEach(j=>{if(statusOf(j,now)==='취소')return;const d=+(j.schedule||'').slice(8,10);(by[d]=by[d]||[]).push(j);});
+  const sel=S.calDay&&S.calDay.slice(0,7)===S.month?S.calDay:(todayStr.slice(0,7)===S.month?todayStr:'');
+  let c='<div class="cal"><div class="cal-h">'+DOW.split('').map((d,i)=>'<span'+(i===0?' class="sun"':i===6?' class="sat"':'')+'>'+d+'</span>').join('')+'</div><div class="cal-g">';
+  for(let i=0;i<lead;i++)c+='<span class="cal-x"></span>';
+  for(let d=1;d<=dim;d++){
+    const k=S.month+'-'+pad(d),js=by[d]||[],unp=js.some(j=>j.payStatus!=='완료'),dow=(lead+d-1)%7;
+    c+='<button type="button" class="cal-d'+(k===todayStr?' today':'')+(k===sel?' sel':'')+(dow===0?' sun':dow===6?' sat':'')+'" data-act="calDay" data-v="'+k+'" aria-label="'+mo+'월 '+d+'일 일정 '+js.length+'건"><b>'+d+'</b>'
+      +(js.length?'<i class="cal-n'+(unp?' unp':'')+'">'+js.length+'</i>':'')
+      +js.slice(0,2).map(j=>'<small class="cal-ev">'+fmtTime(j.schedule)+' '+esc(titleOf(j))+'</small>').join('')
+      +(js.length>2?'<small class="cal-ev">+'+(js.length-2)+'건</small>':'')+'</button>';
+  }
+  c+='</div></div>';
+  c+='<p class="sub" style="margin:6px 2px">숫자는 그날 일정 건수예요. 붉은 숫자는 입금이 안 된 일정이 있다는 뜻이에요.</p>';
+  if(sel){
+    const js=by[+sel.slice(8)]||[];
+    c+='<div class="sech"><h2>'+esc(dayLabel(sel,todayStr))+'<small>'+js.length+'건</small></h2></div>'
+      +(js.length?'<div class="panel"><ul class="rows">'+js.map(j=>jobRow(j,now)).join('')+'</ul></div>':'<div class="panel"><p class="empty">이 날은 일정이 없어요.'+(S.readOnly?'':'<br><button type="button" class="btn primary" data-act="newJob">+ 일정 등록</button>')+'</p></div>');
+  }else c+='<div class="panel"><p class="empty">날짜를 누르면 그날 일정이 아래에 보여요.</p></div>';
+  return c;
+}
+function viewToggle(){return '<div class="seg2" role="group" aria-label="보기 방식"><button type="button" data-act="jview" data-v="list" aria-pressed="'+(S.jview!=='cal')+'">목록</button><button type="button" data-act="jview" data-v="cal" aria-pressed="'+(S.jview==='cal')+'">달력</button></div>';}
 function viewJobs(){
   const now=new Date(),todayStr=ymd(now),a=monthAgg(S.month,S.jobs,S.expenses,now);
   const all=S.jobs.filter(j=>(j.schedule||'').slice(0,7)===S.month).sort(bySchedule);
@@ -971,8 +1011,8 @@ function viewJobs(){
   const list=all.filter(j=>m(j,S.jf));
   return '<div class="pagehead"><h1>일정</h1><div class="actions">'+monthNav()+deskBtn('newJob','일정 등록')+'</div></div>'
    +'<p class="strip"><span>이 달 <b>'+all.length+'건</b></span><span>완료 매출 <b>'+won(a.revenue)+'</b></span><span>미수금 <b>'+won(a.receivable)+'</b></span><span>예정 <b>'+won(a.upcoming)+'</b></span></p>'
-   +'<div class="chips" role="group" aria-label="상태 필터">'+F.map(f=>'<button type="button" class="chip" data-act="jf" data-v="'+f+'" aria-pressed="'+(S.jf===f)+'">'+f+'<small>'+all.filter(j=>m(j,f)).length+'</small></button>').join('')+'</div>'
-   +(list.length?groupHTML(list,now,todayStr):'<div class="panel"><p class="empty">'+(all.length?'조건에 맞는 일정이 없어요.':monthLabel(S.month)+'에 등록된 일정이 없어요.')+(S.readOnly?'':'<br><button type="button" class="btn primary" data-act="newJob">+ 일정 등록</button>')+'</p></div>');
+   +viewToggle()+(S.jview==='cal'?calHTML(all,now,todayStr):'<div class="chips" role="group" aria-label="상태 필터">'+F.map(f=>'<button type="button" class="chip" data-act="jf" data-v="'+f+'" aria-pressed="'+(S.jf===f)+'">'+f+'<small>'+all.filter(j=>m(j,f)).length+'</small></button>').join('')+'</div>'
+   +(list.length?groupHTML(list,now,todayStr):'<div class="panel"><p class="empty">'+(all.length?'조건에 맞는 일정이 없어요.':monthLabel(S.month)+'에 등록된 일정이 없어요.')+(S.readOnly?'':'<br><button type="button" class="btn primary" data-act="newJob">+ 일정 등록</button>')+'</p></div>'));
 }
 function viewExpenses(){
   const now=new Date(),a=monthAgg(S.month,S.jobs,S.expenses,now);
@@ -1127,6 +1167,7 @@ function viewSettings(){
 // ───────── 렌더 ─────────
 function render(){
   renderNav();renderBanner();
+  try{document.title=S.settings.business.name||APP_NAME;}catch(e){}
   if(typeof Store!=='undefined'&&Store.ensureFrom)Store.ensureFrom(Math.min(S.year,S.taxYear,+String(S.month).slice(0,4)||S.year));
   if(S.view==='report'&&S.rtab==='tax'&&typeof loadCounts==='function')loadCounts();
   const v=$('#view');
@@ -1188,7 +1229,7 @@ function guOptions(sido,gu){
   return '<option value="">구·시·군 선택</option>'+list.map(g=>'<option value="'+esc(g)+'"'+(g===gu?' selected':'')+'>'+esc(g)+'</option>').join('')+'<option value="custom"'+(gu&&!list.includes(gu)?' selected':'')+'>직접입력</option>';
 }
 function defaultSchedule(){const d=new Date();d.setDate(d.getDate()+1);return ymd(d)+'T09:00';}
-function metaLine(o){return o&&o.createdAt?'<p class="meta">작성자 '+esc(authorName(o.authorId))+' · 작성 '+fmtStamp(o.createdAt)+' · 수정 '+fmtStamp(o.updatedAt||o.createdAt)+'</p>':'';}
+function metaLine(o){return o&&o.createdAt?'<p class="meta">작성자 '+esc(authorName(o.authorId))+' · 작성일 '+fmtStamp(o.createdAt)+' · 업데이트 '+fmtStamp(o.updatedAt||o.createdAt)+(o.updatedBy?' ('+esc(authorName(o.updatedBy))+')':'')+'</p>':'';}
 const dateChips=(list)=>'<div class="chips wrap" role="group" aria-label="빠른 날짜">'+list.map(x=>'<button type="button" class="chip" data-act="setDate" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
 
 function jobFormHTML(j){
@@ -1225,7 +1266,7 @@ function expFormHTML(e){
   +'<p class="err-text" id="formErr" hidden></p>';
 }
 function footHTML(isNew){
-  return (isNew||S.readOnly?'':'<span class="grow"><span id="delBtns"><button type="button" class="btn ghost" data-act="askDelete" style="color:var(--out)">삭제</button></span><span id="delAsk" hidden>삭제하면 휴지통으로 이동하고 다른 사람 화면에서도 사라져요. 삭제할까요? <button type="button" class="btn danger small" data-act="doDelete">삭제 확정</button> <button type="button" class="btn ghost small" data-act="cancelDelete">아니요</button></span></span>')
+  return (isNew||S.readOnly?'':'<span class="grow"><span id="delBtns"><button type="button" class="btn ghost" data-act="askDelete" style="color:var(--out)">삭제</button></span><span id="delAsk" hidden>삭제하시겠습니까? <button type="button" class="btn danger small" data-act="doDelete">삭제 확정</button> <button type="button" class="btn ghost small" data-act="cancelDelete">아니요</button></span></span>')
    +'<button type="button" class="btn" data-act="closeSheet">닫기</button>'+(S.readOnly?'':'<button type="submit" class="btn primary primary" id="saveBtn">저장</button>');
 }
 
@@ -1293,7 +1334,7 @@ async function saveJob(form){
     authorId:old?old.authorId:(S.me.id||'local'),createdAt:old?old.createdAt:stamp,updatedAt:stamp};
   if(old&&old.isSample)obj.isSample=true;
   const id=old?old.id:uid();
-  if(old&&!window.confirm('이 기록을 수정할까요?\n공유 중인 다른 사람 화면에도 바로 반영돼요.'))return;
+  if(old&&!window.confirm('수정하시겠습니까?'))return;
   const btn=$('#saveBtn');if(btn)btn.disabled=true;
   try{
     await Store.put('jobs',id,obj);
@@ -1316,7 +1357,7 @@ async function saveExp(form){
     authorId:old?old.authorId:(S.me.id||'local'),createdAt:old?old.createdAt:stamp,updatedAt:stamp};
   if(old&&old.isSample)obj.isSample=true;
   const id=old?old.id:uid();
-  if(old&&!window.confirm('이 기록을 수정할까요?\n공유 중인 다른 사람 화면에도 바로 반영돼요.'))return;
+  if(old&&!window.confirm('수정하시겠습니까?'))return;
   const btn=$('#saveBtn');if(btn)btn.disabled=true;
   try{await Store.put('expenses',id,obj);if(!old)S.month=obj.date.slice(0,7);closeSheet();toast(old?'수정했어요':'지출을 등록했어요');render();}
   catch(e){showErr('저장하지 못했어요. 잠시 뒤 다시 시도해 주세요.');if(btn)btn.disabled=false;console.error(e);}
@@ -1401,15 +1442,17 @@ document.addEventListener('click',async ev=>{
     case 'newExp':if(guard())openExp('');break;
     case 'closeSheet':closeSheet();break;
     case 'setDate':{const inp=$('#sheetForm [name="date"]');if(inp){const d=new Date();d.setDate(d.getDate()+(+v||0));inp.value=ymd(d);updateHints();}break;}
-    case 'paid':{if(!guard())break;if(!window.confirm('입금완료로 바꿀까요?\n공유 중인 다른 사람 화면에도 바로 반영돼요.'))break;const j=S.jobs.find(x=>x.id===t.dataset.id);if(j){const o=JSON.parse(JSON.stringify(j));o.payStatus='완료';o.updatedAt=new Date().toISOString();await Store.put('jobs',j.id,o);toast('입금완료로 바꿨어요');}break;}
+    case 'paid':{if(!guard())break;if(!window.confirm('입금완료로 변경하시겠습니까?'))break;const j=S.jobs.find(x=>x.id===t.dataset.id);if(j){const o=JSON.parse(JSON.stringify(j));o.payStatus='완료';o.updatedAt=new Date().toISOString();await Store.put('jobs',j.id,o);toast('입금완료로 바꿨어요');}break;}
     case 'copyJob':{if(S.sheet&&S.sheet.old)copyText(shareText(S.sheet.old),'안내 문구');break;}
     case 'copyTomorrow':{const tm=new Date();tm.setDate(tm.getDate()+1);const k=ymd(tm),now=new Date();const l=S.jobs.filter(j=>(j.schedule||'').slice(0,10)===k&&statusOf(j,now)!=='취소').sort(bySchedule);if(l.length)copyText(shareMany(l,'내일 청소 일정'),'내일 일정 안내 문구');break;}
     case 'setHours':{const i=$('#sheetForm [name="hours"]');if(i)i.value=v;break;}
     case 'showUnpaid':S.jf='입금대기';go('jobs');break;
+    case 'jview':S.jview=v==='cal'?'cal':'list';try{localStorage.setItem('cleanops.jview',S.jview);}catch(e){}render();break;
+    case 'calDay':S.calDay=v;render();break;
     case 'logout':Team.logout();break;
     case 'saveName':{const nm=(($('#myName')||{}).value||'').trim().slice(0,20);if(!nm){toast('이름을 입력해 주세요.');break;}try{await FBM.F.setDoc(FBM.F.doc(fdb,'members',S.me.id),{name:nm},{merge:true});toast('이름을 저장했어요');}catch(e){toast('저장하지 못했어요.');}break;}
     case 'trashRestore':{try{await Store.restore(t.dataset.col,t.dataset.id);toast('되살렸어요');}catch(e){toast('되살리지 못했어요.');}break;}
-    case 'trashPurge':{if(!window.confirm('완전히 삭제할까요?\n이 항목은 다시 되살릴 수 없어요.'))break;try{await Store.purge(t.dataset.col,t.dataset.id);toast('완전히 삭제했어요');}catch(e){toast('삭제하지 못했어요.');}break;}
+    case 'trashPurge':{if(!window.confirm('완전히 삭제하시겠습니까?\n되살릴 수 없습니다.'))break;try{await Store.purge(t.dataset.col,t.dataset.id);toast('완전히 삭제했어요');}catch(e){toast('삭제하지 못했어요.');}break;}
     case 'bakSave':doBackup();break;
     case 'bakShare':doBackupShare();break;
     case 'bakCopy':doBackupCopy();break;
@@ -1426,10 +1469,10 @@ document.addEventListener('click',async ev=>{
     case 'cancelDelete':$('#delBtns').hidden=false;$('#delAsk').hidden=true;break;
     case 'doDelete':{if(!guard()||!S.sheet||!S.sheet.old)break;const k=S.sheet.kind;try{await Store.del(k==='job'?'jobs':'expenses',S.sheet.old.id);closeSheet();toast('삭제했어요. 설정의 휴지통에서 되살릴 수 있어요.');render();}catch(e){showErr('삭제하지 못했어요. 다시 시도해 주세요.');}break;}
     case 'leAdd':{if(!guard())break;const box=t.closest('.le'),inp=$('.le-new',box),val=inp.value.trim(),id=box.dataset.le;if(!val)break;await saveSettings(s=>{const r=listRef(s,id);if(!r.includes(val))r.push(val);});render();break;}
-    case 'leDel':{if(!guard())break;if(!window.confirm('이 항목을 삭제할까요?'))break;const box=t.closest('.le'),id=box.dataset.le,i=+t.dataset.i;await saveSettings(s=>{listRef(s,id).splice(i,1);});render();break;}
+    case 'leDel':{if(!guard())break;if(!window.confirm('삭제하시겠습니까?'))break;const box=t.closest('.le'),id=box.dataset.le,i=+t.dataset.i;await saveSettings(s=>{listRef(s,id).splice(i,1);});render();break;}
     case 'stAdd':{if(!guard())break;const n=$('#stNewName').value.trim();if(!n)break;const type=$('#stNewType').value,pay=digits($('#stNewPay').value);await saveSettings(s=>{if(!s.staff.some(m=>m.name===n))s.staff.push({name:n,type,pay});});render();break;}
-    case 'stDel':{if(!guard())break;if(!window.confirm('이 사람을 목록에서 삭제할까요?\n이미 등록한 일정은 그대로예요.'))break;const i=+t.dataset.i;await saveSettings(s=>{s.staff.splice(i,1);});render();break;}
-    case 'logoDel':if(guard()&&window.confirm('로고를 삭제할까요?')){await saveSettings(s=>{s.business.logo='';});render();}break;
+    case 'stDel':{if(!guard())break;if(!window.confirm('삭제하시겠습니까?\n이미 등록한 일정은 그대로예요.'))break;const i=+t.dataset.i;await saveSettings(s=>{s.staff.splice(i,1);});render();break;}
+    case 'logoDel':if(guard()&&window.confirm('로고를 삭제하시겠습니까?')){await saveSettings(s=>{s.business.logo='';});render();}break;
     case 'licDel':{if(!guard())break;let assets=null;try{assets=window.claude&&await window.claude.use('assets');}catch(e){}const old=S.settings.business.license;await saveSettings(s=>{s.business.license=null;});if(assets&&old&&old.id){try{await assets.delete(old.id);}catch(e){}}toast('사업자등록증을 삭제했어요');render();break;}
     case 'licDl':{const l=S.settings.business.license;if(!l||!l.id)break;try{const r=await fetch('/_blob/'+l.id);const blob=await r.blob();if(S.dl)await S.dl.save({filename:l.name||'사업자등록증',data:blob});else toast('이 화면에서는 내려받을 수 없어요.');}catch(e){toast(e&&e.code==='declined'?'저장을 취소했어요':'파일을 내려받지 못했어요.');}break;}
   }
@@ -1474,7 +1517,7 @@ document.addEventListener('submit',async ev=>{
   const f=ev.target;
   if(f.id==='bizForm'){
     ev.preventDefault();if(!guard())return;
-    if(!window.confirm('업체 정보를 저장할까요?\n공유 중인 다른 사람 화면에도 바로 반영돼요.'))return;
+    if(!window.confirm('수정하시겠습니까?'))return;
     const e=f.elements;
     await saveSettings(s=>{Object.assign(s.business,{name:e.name.value.trim(),rep:e.rep.value.trim(),regNo:e.regNo.value.trim(),bizType:e.bizType.value.trim(),bizItem:e.bizItem.value.trim(),taxType:e.taxType.value,vatIncluded:e.vatIncluded.value==='1',phone:e.phone.value.trim(),email:e.email.value.trim(),address:e.address.value.trim(),defaultFeeRate:Math.max(0,Math.min(10,+e.fee.value||0))});});
     toast('업체 정보를 저장했어요');render();

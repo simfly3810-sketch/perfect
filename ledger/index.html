@@ -86,6 +86,20 @@ a.btn{text-decoration:none}
 .up.late .up-main small{color:var(--out)}
 .up .nums{font:700 15px var(--font-num);font-variant-numeric:tabular-nums;white-space:nowrap}
 .up .btn{flex:none}
+.cal{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.cal-h,.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal-h span{padding:8px 0;text-align:center;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line)}
+.cal-h .sun,.cal-d.sun b{color:var(--out)}.cal-h .sat,.cal-d.sat b{color:var(--accent)}
+.cal-x{min-height:54px;border-top:1px solid var(--line);background:var(--surface-2)}
+.cal-d{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:54px;padding:6px 2px 4px;border:0;border-top:1px solid var(--line);border-left:1px solid var(--line);background:none;color:var(--fg);cursor:pointer;min-width:0}
+.cal-g>*:nth-child(7n+1){border-left:0}
+.cal-d b{font:600 14px var(--font-body)}
+.cal-d.today b{display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:12px;background:var(--accent);color:var(--accent-ink)}
+.cal-d.sel{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.cal-n{font-style:normal;font-weight:700;font-size:12px;min-width:20px;padding:0 5px;border-radius:10px;background:var(--accent);color:var(--accent-ink);text-align:center;line-height:20px}
+.cal-n.unp{background:var(--out);color:#fff}
+.cal-ev{display:none;max-width:100%;font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (min-width:720px){.cal-d{min-height:96px;align-items:flex-start;padding:6px 8px}.cal-ev{display:block}.cal-n{position:absolute;top:6px;right:6px}}
 .sech{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:20px 2px 8px}
 .sech h2{font:700 16px/1.4 var(--font-body)}
 .sech small{color:var(--muted);font-weight:400;font-size:12.5px;margin-left:6px}
@@ -298,6 +312,7 @@ details.more>.inner{display:flex;flex-direction:column;gap:12px;padding-bottom:6
 'use strict';
 
 /*LOGIC_START*/
+const APP_NAME='클린노트';
 const GROUPS=['고정경비','여비비','이동경비','식대'];
 const GROUPKEY={'고정경비':'fixed','여비비':'misc','이동경비':'travel','식대':'meal'};
 const PAYS=['현금','카드','계좌이체'];
@@ -531,7 +546,7 @@ function axisLabel(v){
 const T0=new Date();
 const S={view:'home',rtab:'sum',month:ymOf(T0),year:T0.getFullYear(),taxYear:T0.getFullYear(),taxPeriod:'all',
   jobs:[],expenses:[],settings:mergeSettings({}),names:{},me:{id:'local',name:''},userNS:null,dl:null,
-  readOnly:false,mode:'loading',err:'',loaded:{jobs:false,exp:false},jf:'전체',ef:'전체',rs:'rev',sheet:null};
+  readOnly:false,mode:'loading',err:'',loaded:{jobs:false,exp:false},jf:'전체',ef:'전체',rs:'rev',sheet:null,calDay:'',jview:(()=>{try{return localStorage.getItem('cleanops.jview')==='cal'?'cal':'list';}catch(e){return 'list';}})()};
 const $=(s,r)=>(r||document).querySelector(s);
 const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -674,8 +689,8 @@ const ICON={
 const NAV=[['home','홈'],['jobs','일정'],['expenses','지출'],['report','정산'],['settings','설정']];
 const ico=k=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+ICON[k]+'</svg>';
 function brandHTML(){
-  const b=S.settings.business,logo=safeImg(b.logo),name=b.name||'내 청소업체';
-  return '<div class="brand"><div class="brand-mark">'+(logo?'<img src="'+esc(logo)+'" alt="">':esc(name.slice(0,1)))+'</div><div><div class="brand-name">'+esc(name)+'</div><div class="brand-sub">운영장부</div></div></div>';
+  const b=S.settings.business,logo=safeImg(b.logo),name=b.name||APP_NAME;
+  return '<div class="brand"><div class="brand-mark">'+(logo?'<img src="'+esc(logo)+'" alt="">':esc(name.slice(0,1)))+'</div><div><div class="brand-name">'+esc(name)+'</div><div class="brand-sub">'+esc(b.name?APP_NAME:'일정·정산')+'</div></div></div>';
 }
 function renderNav(){
   const btn=(c,k,l)=>'<button type="button" class="'+c+'" data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ico(k)+'<span>'+l+'</span></button>';
@@ -738,7 +753,7 @@ function viewHome(){
   const upcoming=act.filter(j=>{const s=statusOf(j,now);return (j.schedule||'').slice(0,10)>todayStr&&(s==='대기'||s==='진행중');}).slice(0,8);
   const unpaid=S.jobs.filter(j=>j.payStatus!=='완료'&&statusOf(j,now)!=='취소').sort(bySchedule);
   const sample=S.jobs.some(j=>j.isSample)||S.expenses.some(e=>e.isSample);
-  let h='<div class="pagehead"><div><p class="sub">'+esc(S.settings.business.name||'청소 운영장부')+'</p><h1>'+(now.getMonth()+1)+'월 '+now.getDate()+'일 '+DOW[now.getDay()]+'요일</h1></div>'+deskBtn('newJob','일정 등록')+'</div>';
+  let h='<div class="pagehead"><div><p class="sub">'+esc(S.settings.business.name||APP_NAME)+'</p><h1>'+(now.getMonth()+1)+'월 '+now.getDate()+'일 '+DOW[now.getDay()]+'요일</h1></div>'+deskBtn('newJob','일정 등록')+'</div>';
   if(sample&&!S.readOnly)h+='<div class="banner">예시 데이터가 들어 있어요. 실제 업무를 시작하기 전에 지워 주세요. <button type="button" class="btn" data-act="clearSample">예시 데이터 지우기</button></div>';
   if(tomorrow.length)h+='<div class="banner note-in"><span>내일 일정 <b>'+tomorrow.length+'건</b> · 첫 일정 '+fmtTime(tomorrow[0].schedule)+' '+esc(titleOf(tomorrow[0]))+'</span><button type="button" class="btn" data-act="copyTomorrow">안내 문구 복사</button></div>';
   h+='<div class="sech"><h2>오늘 일정<small>'+today.length+'건</small></h2></div>';
@@ -757,6 +772,30 @@ function viewHome(){
   h+='<div class="actions" style="margin-top:16px"><button type="button" class="btn" data-go="expenses">지출 보기</button><button type="button" class="btn" data-go="tax">세무자료 받기</button></div>';
   return h;
 }
+function calHTML(all,now,todayStr){
+  const p=S.month.split('-').map(Number),y=p[0],mo=p[1],lead=new Date(y,mo-1,1).getDay(),dim=new Date(y,mo,0).getDate();
+  const by={};
+  all.forEach(j=>{if(statusOf(j,now)==='취소')return;const d=+(j.schedule||'').slice(8,10);(by[d]=by[d]||[]).push(j);});
+  const sel=S.calDay&&S.calDay.slice(0,7)===S.month?S.calDay:(todayStr.slice(0,7)===S.month?todayStr:'');
+  let c='<div class="cal"><div class="cal-h">'+DOW.split('').map((d,i)=>'<span'+(i===0?' class="sun"':i===6?' class="sat"':'')+'>'+d+'</span>').join('')+'</div><div class="cal-g">';
+  for(let i=0;i<lead;i++)c+='<span class="cal-x"></span>';
+  for(let d=1;d<=dim;d++){
+    const k=S.month+'-'+pad(d),js=by[d]||[],unp=js.some(j=>j.payStatus!=='완료'),dow=(lead+d-1)%7;
+    c+='<button type="button" class="cal-d'+(k===todayStr?' today':'')+(k===sel?' sel':'')+(dow===0?' sun':dow===6?' sat':'')+'" data-act="calDay" data-v="'+k+'" aria-label="'+mo+'월 '+d+'일 일정 '+js.length+'건"><b>'+d+'</b>'
+      +(js.length?'<i class="cal-n'+(unp?' unp':'')+'">'+js.length+'</i>':'')
+      +js.slice(0,2).map(j=>'<small class="cal-ev">'+fmtTime(j.schedule)+' '+esc(titleOf(j))+'</small>').join('')
+      +(js.length>2?'<small class="cal-ev">+'+(js.length-2)+'건</small>':'')+'</button>';
+  }
+  c+='</div></div>';
+  c+='<p class="sub" style="margin:6px 2px">숫자는 그날 일정 건수예요. 붉은 숫자는 입금이 안 된 일정이 있다는 뜻이에요.</p>';
+  if(sel){
+    const js=by[+sel.slice(8)]||[];
+    c+='<div class="sech"><h2>'+esc(dayLabel(sel,todayStr))+'<small>'+js.length+'건</small></h2></div>'
+      +(js.length?'<div class="panel"><ul class="rows">'+js.map(j=>jobRow(j,now)).join('')+'</ul></div>':'<div class="panel"><p class="empty">이 날은 일정이 없어요.'+(S.readOnly?'':'<br><button type="button" class="btn primary" data-act="newJob">+ 일정 등록</button>')+'</p></div>');
+  }else c+='<div class="panel"><p class="empty">날짜를 누르면 그날 일정이 아래에 보여요.</p></div>';
+  return c;
+}
+function viewToggle(){return '<div class="seg2" role="group" aria-label="보기 방식"><button type="button" data-act="jview" data-v="list" aria-pressed="'+(S.jview!=='cal')+'">목록</button><button type="button" data-act="jview" data-v="cal" aria-pressed="'+(S.jview==='cal')+'">달력</button></div>';}
 function viewJobs(){
   const now=new Date(),todayStr=ymd(now),a=monthAgg(S.month,S.jobs,S.expenses,now);
   const all=S.jobs.filter(j=>(j.schedule||'').slice(0,7)===S.month).sort(bySchedule);
@@ -765,8 +804,8 @@ function viewJobs(){
   const list=all.filter(j=>m(j,S.jf));
   return '<div class="pagehead"><h1>일정</h1><div class="actions">'+monthNav()+deskBtn('newJob','일정 등록')+'</div></div>'
    +'<p class="strip"><span>이 달 <b>'+all.length+'건</b></span><span>완료 매출 <b>'+won(a.revenue)+'</b></span><span>미수금 <b>'+won(a.receivable)+'</b></span><span>예정 <b>'+won(a.upcoming)+'</b></span></p>'
-   +'<div class="chips" role="group" aria-label="상태 필터">'+F.map(f=>'<button type="button" class="chip" data-act="jf" data-v="'+f+'" aria-pressed="'+(S.jf===f)+'">'+f+'<small>'+all.filter(j=>m(j,f)).length+'</small></button>').join('')+'</div>'
-   +(list.length?groupHTML(list,now,todayStr):'<div class="panel"><p class="empty">'+(all.length?'조건에 맞는 일정이 없어요.':monthLabel(S.month)+'에 등록된 일정이 없어요.')+(S.readOnly?'':'<br><button type="button" class="btn primary" data-act="newJob">+ 일정 등록</button>')+'</p></div>');
+   +viewToggle()+(S.jview==='cal'?calHTML(all,now,todayStr):'<div class="chips" role="group" aria-label="상태 필터">'+F.map(f=>'<button type="button" class="chip" data-act="jf" data-v="'+f+'" aria-pressed="'+(S.jf===f)+'">'+f+'<small>'+all.filter(j=>m(j,f)).length+'</small></button>').join('')+'</div>'
+   +(list.length?groupHTML(list,now,todayStr):'<div class="panel"><p class="empty">'+(all.length?'조건에 맞는 일정이 없어요.':monthLabel(S.month)+'에 등록된 일정이 없어요.')+(S.readOnly?'':'<br><button type="button" class="btn primary" data-act="newJob">+ 일정 등록</button>')+'</p></div>'));
 }
 function viewExpenses(){
   const now=new Date(),a=monthAgg(S.month,S.jobs,S.expenses,now);
@@ -920,6 +959,7 @@ function viewSettings(){
 // ───────── 렌더 ─────────
 function render(){
   renderNav();renderBanner();
+  try{document.title=S.settings.business.name||APP_NAME;}catch(e){}
   const v=$('#view');
   if(!(S.loaded.jobs&&S.loaded.exp)&&!S.err){v.innerHTML='<p class="loading">장부를 불러오는 중…</p>';$('#fab').innerHTML='';return;}
   const fn={home:viewHome,jobs:viewJobs,expenses:viewExpenses,report:viewReport,settings:viewSettings}[S.view];
@@ -979,7 +1019,7 @@ function guOptions(sido,gu){
   return '<option value="">구·시·군 선택</option>'+list.map(g=>'<option value="'+esc(g)+'"'+(g===gu?' selected':'')+'>'+esc(g)+'</option>').join('')+'<option value="custom"'+(gu&&!list.includes(gu)?' selected':'')+'>직접입력</option>';
 }
 function defaultSchedule(){const d=new Date();d.setDate(d.getDate()+1);return ymd(d)+'T09:00';}
-function metaLine(o){return o&&o.createdAt?'<p class="meta">작성자 '+esc(authorName(o.authorId))+' · 작성 '+fmtStamp(o.createdAt)+' · 수정 '+fmtStamp(o.updatedAt||o.createdAt)+'</p>':'';}
+function metaLine(o){return o&&o.createdAt?'<p class="meta">작성자 '+esc(authorName(o.authorId))+' · 작성일 '+fmtStamp(o.createdAt)+' · 업데이트 '+fmtStamp(o.updatedAt||o.createdAt)+(o.updatedBy?' ('+esc(authorName(o.updatedBy))+')':'')+'</p>':'';}
 const dateChips=(list)=>'<div class="chips wrap" role="group" aria-label="빠른 날짜">'+list.map(x=>'<button type="button" class="chip" data-act="setDate" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
 
 function jobFormHTML(j){
@@ -1194,6 +1234,8 @@ document.addEventListener('click',async ev=>{
     case 'copyTomorrow':{const tm=new Date();tm.setDate(tm.getDate()+1);const k=ymd(tm),now=new Date();const l=S.jobs.filter(j=>(j.schedule||'').slice(0,10)===k&&statusOf(j,now)!=='취소').sort(bySchedule);if(l.length)copyText(shareMany(l,'내일 청소 일정'),'내일 일정 안내 문구');break;}
     case 'setHours':{const i=$('#sheetForm [name="hours"]');if(i)i.value=v;break;}
     case 'showUnpaid':S.jf='입금대기';go('jobs');break;
+    case 'jview':S.jview=v==='cal'?'cal':'list';try{localStorage.setItem('cleanops.jview',S.jview);}catch(e){}render();break;
+    case 'calDay':S.calDay=v;render();break;
     case 'resetDemo':{try{localStorage.removeItem('cleanops.demo.v1');}catch(e){}Store.mem=demoData();Store.persist();Store.emit();toast('예시 데이터를 처음 상태로 되돌렸어요');break;}
     case 'clearSample':clearSample();break;
     case 'dl':downloadCSV(t.dataset.k);break;
