@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 아래 목록에 있는 이메일로 로그인한 사람만 읽고 쓸 수 있어요.
+    function allowed() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'EMAIL1@example.com',
+          'EMAIL2@example.com'
+        ];
+    }
+    match /{document=**} {
+      allow read, write: if allowed();
+    }
+  }
+}
