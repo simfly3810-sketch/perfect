@@ -79,6 +79,13 @@ a.btn{text-decoration:none}
 .cols{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 .empty{padding:22px 16px;color:var(--muted);text-align:center}
 .empty .btn{margin-top:10px}
+.up{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.up-main{flex:1;min-width:0;cursor:pointer}
+.up-main strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
+.up-main small{color:var(--muted);font-size:12.5px}
+.up.late .up-main small{color:var(--out)}
+.up .nums{font:700 15px var(--font-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.up .btn{flex:none}
 .sech{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:20px 2px 8px}
 .sech h2{font:700 16px/1.4 var(--font-body)}
 .sech small{color:var(--muted);font-weight:400;font-size:12.5px;margin-left:6px}
@@ -716,6 +723,12 @@ function barRows(items,total,o){
   if(!items.length||!total)return '<p class="empty" style="padding:10px 0">아직 자료가 없어요.</p>';
   return items.map(it=>'<div class="brow"><span>'+esc(it[0])+'</span><div class="bar '+(o||'')+'"><i style="width:'+Math.round(it[1]/total*100)+'%"></i></div><span class="v">'+won(it[1])+(it[2]?' · '+esc(it[2]):'')+'</span></div>').join('');
 }
+function unpaidLine(j,todayStr){
+  const d=(j.schedule||'').slice(0,10),late=d&&d<todayStr,dt=new Date(j.schedule);
+  const when=isNaN(dt)?'':(dt.getMonth()+1)+'/'+dt.getDate();
+  const sub=[when,j.customer].filter(Boolean).map(esc).join(' · ');
+  return '<li class="up'+(late?' late':'')+'"><div class="up-main" data-open="job" data-id="'+esc(j.id)+'"><strong>'+esc(titleOf(j))+'</strong><small>'+sub+(late?' · 지난 일정':'')+'</small></div><b class="nums">'+won(j.amount)+'</b>'+(S.readOnly?'':'<button type="button" class="btn small" data-act="paid" data-id="'+esc(j.id)+'">입금완료</button>')+'</li>';
+}
 function viewHome(){
   const now=new Date(),todayStr=ymd(now),tm=new Date(now);tm.setDate(tm.getDate()+1);const tmrStr=ymd(tm);
   const a=monthAgg(ymOf(now),S.jobs,S.expenses,now),yr=now.getFullYear(),yt=yearAgg(yr,S.jobs,S.expenses,now).total,goal=S.settings.goals[yr]||{};
@@ -733,8 +746,9 @@ function viewHome(){
   h+='<div class="sech"><h2>다가오는 일정</h2><button type="button" class="linkbtn" data-go="jobs">전체 보기</button></div>';
   h+=upcoming.length?groupHTML(upcoming,now,todayStr):'<div class="panel"><p class="empty">앞으로 잡힌 일정이 없어요.</p></div>';
   if(unpaid.length){
-    h+='<div class="sech"><h2>입금 대기<small>'+unpaid.length+'건 · '+won(unpaid.reduce((s,j)=>s+(+j.amount||0),0))+'</small></h2></div><div class="panel"><ul class="rows">'+unpaid.slice(0,4).map(j=>jobRow(j,now,{date:true})).join('')+'</ul></div>';
-    if(unpaid.length>4)h+='<p class="sub" style="margin:6px 2px">나머지 '+(unpaid.length-4)+'건은 일정 메뉴에서 ‘입금대기’로 볼 수 있어요.</p>';
+    const tot=unpaid.reduce((a,j)=>a+(+j.amount||0),0),LIM=3;
+    h+='<div class="sech"><h2>입금 대기<small>'+unpaid.length+'건 · '+won(tot)+'</small></h2>'+(unpaid.length>LIM?'<button type="button" class="linkbtn" data-act="showUnpaid">전체 보기</button>':'')+'</div><div class="panel"><ul class="rows">'+unpaid.slice(0,LIM).map(j=>unpaidLine(j,todayStr)).join('')+'</ul></div>';
+    if(unpaid.length>LIM)h+='<p class="sub" style="margin:6px 2px">외 '+(unpaid.length-LIM)+'건</p>';
   }
   h+='<div class="sech"><h2>이번 달 정산<small>'+monthLabel(ymOf(now))+'</small></h2><button type="button" class="linkbtn" data-go="report">자세히</button></div>';
   h+='<section class="kpis" aria-label="이번 달 요약">'+kpi('매출',a.revenue,'완료 '+a.nDone+'건')+kpi('지출',a.cost,'','out')+kpi('순이익',a.profit,a.revenue?'이익률 '+Math.round(a.profit/a.revenue*100)+'%':'',a.profit>=0?'in':'out')+'</section>';
@@ -1179,6 +1193,7 @@ document.addEventListener('click',async ev=>{
     case 'copyJob':{if(S.sheet&&S.sheet.old)copyText(shareText(S.sheet.old),'안내 문구');break;}
     case 'copyTomorrow':{const tm=new Date();tm.setDate(tm.getDate()+1);const k=ymd(tm),now=new Date();const l=S.jobs.filter(j=>(j.schedule||'').slice(0,10)===k&&statusOf(j,now)!=='취소').sort(bySchedule);if(l.length)copyText(shareMany(l,'내일 청소 일정'),'내일 일정 안내 문구');break;}
     case 'setHours':{const i=$('#sheetForm [name="hours"]');if(i)i.value=v;break;}
+    case 'showUnpaid':S.jf='입금대기';go('jobs');break;
     case 'resetDemo':{try{localStorage.removeItem('cleanops.demo.v1');}catch(e){}Store.mem=demoData();Store.persist();Store.emit();toast('예시 데이터를 처음 상태로 되돌렸어요');break;}
     case 'clearSample':clearSample();break;
     case 'dl':downloadCSV(t.dataset.k);break;
