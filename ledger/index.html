@@ -319,6 +319,7 @@ details.more>.inner{display:flex;flex-direction:column;gap:12px;padding-bottom:6
 
 /*LOGIC_START*/
 const APP_NAME='클린노트';
+let dupAsked=false;
 const GROUPS=['고정경비','여비비','이동경비','식대'];
 const GROUPKEY={'고정경비':'fixed','여비비':'misc','이동경비':'travel','식대':'meal'};
 const PAYS=['현금','카드','계좌이체'];
@@ -1165,6 +1166,9 @@ async function saveJob(form){
     crew,hours:Math.min(24,Math.max(0,Math.round((+f.hours.value||0)*2)/2)),source:(f.source&&f.source.value)||'',memo:f.memo.value.trim(),
     authorId:old?old.authorId:(S.me.id||'local'),createdAt:old?old.createdAt:stamp,updatedAt:stamp};
   if(old&&old.isSample)obj.isSample=true;
+  const dnow=new Date(),dup=S.jobs.some(x=>x.id!==(old&&old.id)&&x.schedule===obj.schedule&&statusOf(x,dnow)!=='취소');
+  dupAsked=dup;
+  if(dup&&!window.confirm('동일 시간에 등록된 일정이 있습니다. '+(old?'수정':'추가')+'하시겠습니까?'))return;
   const id=old?old.id:uid();
   const btn=$('#saveBtn');if(btn)btn.disabled=true;
   try{
@@ -1187,6 +1191,7 @@ async function saveExp(form){
   const obj={date:f.date.value,group:f.group.value,item,amount,vendor:f.vendor.value.trim(),payMethod:f.payMethod.value,proof:f.proof.value,jobId:f.jobId.value||'',memo:f.memo.value.trim(),
     authorId:old?old.authorId:(S.me.id||'local'),createdAt:old?old.createdAt:stamp,updatedAt:stamp};
   if(old&&old.isSample)obj.isSample=true;
+  dupAsked=false;
   const id=old?old.id:uid();
   const btn=$('#saveBtn');if(btn)btn.disabled=true;
   try{await Store.put('expenses',id,obj);if(!old)S.month=obj.date.slice(0,7);closeSheet();toast(old?'수정했어요':'지출을 등록했어요');render();}
