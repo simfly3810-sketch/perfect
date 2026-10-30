@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0a6a86"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="클린노트"><meta name="apple-mobile-web-app-status-bar-style" content="default"><title>클린노트</title><style>:root{color-scheme:light}html{scroll-padding-top:0}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><script src="firebase-config.js"></script></head><body>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="app-build" content="202610301626"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0a6a86"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="클린노트"><meta name="apple-mobile-web-app-status-bar-style" content="default"><title>클린노트</title><style>:root{color-scheme:light}html{scroll-padding-top:0}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><script src="firebase-config.js"></script></head><body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -579,6 +579,15 @@ const cls={'대기':'wait','진행중':'run','완료':'done','취소':'cancel'};
 const safeImg=s=>typeof s==='string'&&/^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,/.test(s)?s:'';
 
 // ───────── 저장소 (Firebase 공동 장부) ─────────
+const APP_BUILD='202610301626';
+const Upd={busy:false,t:0,async check(force){
+  if(this.busy||!navigator.onLine)return;
+  if(!force&&Date.now()-this.t<120000)return;
+  this.busy=true;this.t=Date.now();
+  try{const r=await fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'});const tx=await r.text();const m=tx.match(/name="app-build" content="(\d+)"/);if(m&&m[1]!==APP_BUILD&&!S.update){S.update=true;renderBanner();}}catch(e){}
+  this.busy=false;}};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)Upd.check();});
+window.addEventListener('online',()=>Upd.check(true));
 Object.assign(S,{mode:'cloud',trash:{jobs:[],expenses:[]},backupMeta:null,counts:null,countsAt:0,archived:{},pendingBak:null,email:''});
 let FBM=null,fdb=null,fauth=null;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -661,7 +670,7 @@ const Team={
       if(u){
         const nm=u.displayName||(u.email||'').split('@')[0]||'사용자';
         S.me={id:u.uid,name:nm};S.email=u.email||'';S.err='';
-        this.hide();
+        this.hide();setTimeout(()=>Upd.check(true),3000);
         Store.start({
           jobs:list=>{S.jobs=list;S.loaded.jobs=true;renderSoft();},
           expenses:list=>{S.expenses=list;S.loaded.exp=true;renderSoft();},
@@ -855,7 +864,7 @@ function yearPanel(){
 }
 function accountPanel(){
   return '<section class="panel" style="margin-bottom:14px"><div class="panel-h"><h2>내 계정</h2></div><div class="panel-b stack" style="gap:10px">'
-   +'<p class="hint">'+esc(S.email)+' 로 로그인되어 있어요.</p>'
+   +'<p class="hint">'+esc(S.email)+' 로 로그인되어 있어요. · 앱 버전 '+APP_BUILD+'</p>'
    +'<label class="fld"><span>표시 이름 (작성자로 보여요)</span><input type="text" id="myName" maxlength="20" value="'+esc(S.me.name)+'"></label>'
    +'<div class="actions"><button type="button" class="btn" data-act="saveName">이름 저장</button><button type="button" class="btn" data-act="logout">로그아웃</button></div></div></section>';
 }
@@ -940,6 +949,7 @@ function renderBanner(){
   if(S.err==='permission-denied')h+='<div class="banner err"><span>이 계정은 장부를 볼 권한이 없어요. 관리자에게 문의해 주세요.</span><button type="button" class="btn" data-act="logout">로그아웃</button></div>';
   else if(S.err)h+='<div class="banner err">데이터를 불러오지 못했어요. 페이지를 새로고침해 주세요. ('+esc(S.err)+')</div>';
   if(!navigator.onLine)h+='<div class="banner note-in">인터넷에 연결되지 않았어요. 입력한 내용은 이 폰에 임시 저장되고, 연결되면 자동으로 올라가요.</div>';
+  if(S.update)h+='<div class="banner note-in"><span><b>새 버전이 있어요.</b> 새로고침하면 적용돼요.</span><button type="button" class="btn" data-act="reload">새로고침</button></div>';
   {const bm=S.backupMeta,dd=bm&&bm.at?Math.floor((Date.now()-bm.at)/864e5):null,n=S.jobs.length+S.expenses.length;
    if(S.me.id!=='local'&&!S.err&&S.loaded.jobs&&n>0&&(dd===null||dd>=30))h+='<div class="banner"><span><b>백업이 필요해요.</b> '+(dd===null?'아직 백업한 적이 없어요.':'마지막 백업이 '+dd+'일 전이에요.')+'</span><button type="button" class="btn" data-go="tax">백업하기</button></div>';}
   if(S.readOnly)h+='<div class="banner">보기 전용 권한이에요. 등록과 수정은 편집 권한이 있는 사람만 할 수 있어요.</div>';
@@ -1499,6 +1509,7 @@ document.addEventListener('click',async ev=>{
     case 'jview':S.jview=v==='cal'?'cal':'list';try{localStorage.setItem('cleanops.jview',S.jview);}catch(e){}render();break;
     case 'calDay':S.calDay=v;render();break;
     case 'seenAll':Seen.markAll();render();break;
+    case 'reload':location.reload();break;
     case 'logout':Team.logout();break;
     case 'saveName':{const nm=(($('#myName')||{}).value||'').trim().slice(0,20);if(!nm){toast('이름을 입력해 주세요.');break;}try{await FBM.F.setDoc(FBM.F.doc(fdb,'members',S.me.id),{name:nm},{merge:true});toast('이름을 저장했어요');}catch(e){toast('저장하지 못했어요.');}break;}
     case 'trashRestore':{try{await Store.restore(t.dataset.col,t.dataset.id);toast('되살렸어요');}catch(e){toast('되살리지 못했어요.');}break;}
