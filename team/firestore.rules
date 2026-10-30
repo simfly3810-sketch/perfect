@@ -1,3 +1,4 @@
+// 실제 허용 이메일은 이 저장소에 적지 않고 Firebase 콘솔의 규칙에만 둡니다 (저장소가 공개라서).
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -5,8 +6,8 @@ service cloud.firestore {
     function allowed() {
       return request.auth != null
         && request.auth.token.email in [
-          'lyr3810@naver.com',
-          'lyr3810@mcircle.biz'
+          'EMAIL1@example.com',
+          'EMAIL2@example.com'
         ];
     }
     match /{document=**} {
