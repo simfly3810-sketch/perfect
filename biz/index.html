@@ -167,6 +167,7 @@ a.btn{text-decoration:none}
 .row:hover{background:var(--surface-2)}
 .tm{display:flex;flex-direction:column;font:700 17px/1.25 var(--font-num);font-variant-numeric:tabular-nums}
 .tm small{font:500 11.5px var(--font-body);color:var(--muted)}
+.tm.d{font-size:15px;white-space:nowrap}
 .what{min-width:0}
 .l1{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-weight:700;font-size:15px}
 .l1 strong{overflow-wrap:anywhere}
@@ -409,6 +410,7 @@ function vatSplit(amount,b){
   return{supply:amount,vat,total:amount+vat,applicable:true};
 }
 const dayText=d=>(d.getMonth()+1)+'/'+d.getDate()+'('+DOW[d.getDay()]+')';
+const expDay=ds=>{const d=new Date(String(ds)+'T00:00:00');return isNaN(d)?'-':'<small>'+DOW[d.getDay()]+'요일</small>'+(d.getMonth()+1)+'/'+d.getDate();};
 function dayLabel(ds,todayStr){
   const t=new Date(todayStr+'T00:00:00'),d=new Date(ds+'T00:00:00');
   const diff=Math.round((d-t)/86400000),base=dayText(d);
@@ -798,7 +800,7 @@ function viewExpenses(){
   const list=all.filter(e=>S.ef==='전체'||e.group===S.ef);
   const jm={};for(const j of S.jobs)jm[j.id]=j;
   const rows=list.map(e=>{const j=e.jobId?jm[e.jobId]:null;
-    return '<li><div class="row" tabindex="0" role="button" data-open="exp" data-id="'+esc(e.id)+'"><div class="tm">'+fmtDay(e.date)+'</div><div class="what"><div class="l1"><strong>'+esc(e.item||'항목 없음')+'</strong>'+nbadge(e)+'<span class="pill">'+esc(e.group)+'</span></div><div class="l2">'+[e.vendor,e.payMethod,e.proof,j?'일정: '+titleOf(j):''].filter(Boolean).map(esc).join(' · ')+'</div>'+(e.memo?'<div class="l3">'+esc(e.memo)+'</div>':'')+'</div><div class="money"><b class="nums out">'+won(e.amount)+'</b></div></div></li>';}).join('');
+    return '<li><div class="row" tabindex="0" role="button" data-open="exp" data-id="'+esc(e.id)+'"><div class="tm d">'+expDay(e.date)+'</div><div class="what"><div class="l1"><strong>'+esc(e.item||'항목 없음')+'</strong>'+nbadge(e)+'<span class="pill">'+esc(e.group)+'</span></div><div class="l2">'+[e.vendor,e.payMethod,e.proof,j?'일정: '+titleOf(j):''].filter(Boolean).map(esc).join(' · ')+'</div>'+(e.memo?'<div class="l3">'+esc(e.memo)+'</div>':'')+'</div><div class="money"><b class="nums out">'+won(e.amount)+'</b></div></div></li>';}).join('');
   return '<div class="pagehead"><h1>지출</h1><div class="actions">'+monthNav()+deskBtn('newExp','지출 등록')+'</div></div>'
    +'<section class="kpis four" aria-label="이달 지출 요약">'+kpi('고정경비',a.fixed)+kpi('여비비',a.misc)+kpi('이동경비',a.travel)+kpi('식대',a.meal)+'</section>'
    +'<p class="strip"><span>직접 입력한 지출 <b>'+won(a.expense)+'</b></span><span>인건비 <b>'+won(a.labor)+'</b></span><span>카드수수료 <b>'+won(a.fee)+'</b></span></p><p class="hint" style="margin:-4px 2px 12px">인건비와 카드수수료는 일정에 입력한 내용으로 자동 계산돼요.</p>'
